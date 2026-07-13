@@ -8,7 +8,7 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Mock Data
+# Mock Data pour l'Interface
 MEMBERS = [
     {"id": 1, "name": "Alice Dupont", "role": "Étudiant", "online": True},
     {"id": 2, "name": "Bob Martin", "role": "Administration", "online": False},
@@ -25,6 +25,56 @@ MESSAGES = {
         {"sender": "Bob Martin", "text": "N'oubliez pas la réunion de demain concernant les accès serveurs.", "time": "09:15", "file_url": None}
     ]
 }
+
+# Boîte aux lettres Cryptographique (Étape 4)
+ENVELOPES_INBOX = {}
+
+@app.route('/send', methods=['POST'])
+def send_envelope():
+    """Reçoit un message chiffré et le met en attente pour le destinataire."""
+    envelope = request.json
+    recipient = envelope.get("to")
+    if not recipient:
+        return jsonify({"error": "Destinataire manquant ('to')"}), 400
+        
+    recipient = recipient.lower()
+    if recipient not in ENVELOPES_INBOX:
+        ENVELOPES_INBOX[recipient] = []
+        
+    ENVELOPES_INBOX[recipient].append(envelope)
+    return jsonify({"status": "delivered"})
+
+@app.route('/receive/<user>')
+def receive_envelope(user):
+    """Récupère les messages chiffrés en attente pour l'utilisateur."""
+    user = user.lower()
+    inbox = ENVELOPES_INBOX.get(user, [])
+    # Dans un vrai système, on viderait la boîte, ici on se contente de renvoyer
+    return jsonify(inbox)
+
+import sys
+base_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(base_dir)
+try:
+    from shared.crypto_utils import compute_fingerprint
+except ImportError:
+    compute_fingerprint = None
+
+@app.route('/publickey/<user>')
+def get_publickey(user):
+    user = user.lower()
+    pub_key_path = os.path.join(base_dir, 'shared', 'keys', f'{user}_public.pem')
+    if not os.path.exists(pub_key_path):
+        return jsonify({"error": "Utilisateur introuvable ou clé manquante"}), 404
+        
+    with open(pub_key_path, 'rb') as f:
+        pub_pem = f.read()
+        
+    return jsonify({
+        "username": user,
+        "public_key_pem": pub_pem.decode('utf-8'),
+        "fingerprint": compute_fingerprint(pub_pem)
+    })
 
 @app.route('/')
 def index():
