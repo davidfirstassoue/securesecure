@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+shared/keys/charlie_private.pem
+shared/keys/charlie_public.pem
+shared/keys/charliecharlie_private.pem
+shared/keys/charliecharlie_public.pem

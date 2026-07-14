@@ -40,8 +40,12 @@ def get_publickey(user):
     })
 
 if __name__ == '__main__':
-    print("-----------------------------------------------------")
-    print("⚠️  DÉMARRAGE DU SERVEUR ROGUE (EVE) SUR LE PORT 5001 ⚠️")
-    print("Ce serveur simule une attaque Man-In-The-Middle.")
-    print("-----------------------------------------------------")
-    app.run(debug=True, port=5001)
+    print("=" * 60)
+    print("  ⚠️  SERVEUR ROGUE — L'ÉTUDIANT PIRATE (EVE)")
+    print("  Port : 5002")
+    print("  Rôle : Usurpe l'annuaire de clés. Renvoie la clé d'Eve")
+    print("         à la place de celle du vrai destinataire.")
+    print("  Pour activer l'attaque : configurer le client Alice")
+    print("         avec l'IP de ce serveur (port 5002).")
+    print("=" * 60)
+    app.run(debug=True, port=5002)

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail de Gestion - CampusAdmin</title>
+    <meta name="description" content="Système de gestion interne et d'échange de pièces comptables de l'université.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="admin-body">
+
+<!-- === ECRAN D'INITIALISATION / CONNEXION === -->
+<div class="setup-overlay" id="setup-overlay">
+    <div class="setup-card">
+        <div class="setup-logo">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-accent"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <h1>CampusAdmin</h1>
+            <p class="mono text-muted">[ INITIALISATION DE LA SESSION ]</p>
+        </div>
+
+        <!-- Onglets Connexion / Inscription -->
+        <div class="setup-tabs">
+            <button class="setup-tab-btn active" id="tab-login">Connexion</button>
+            <button class="setup-tab-btn" id="tab-register">Inscription</button>
+        </div>
+
+        <!-- Formulaire de Connexion -->
+        <div class="setup-form-container" id="form-login-container">
+            <div class="form-group">
+                <label class="form-label" for="username-input">Identifiant / Nom d'utilisateur</label>
+                <input type="text" class="form-input" id="username-input" placeholder="Ex: alice, bob..." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password-input">Mot de passe</label>
+                <input type="password" class="form-input" id="password-input" placeholder="Saisissez votre mot de passe" required>
+            </div>
+            <button class="btn-primary btn-launch" id="btn-launch" style="width: 100%;">
+                <span>Ouvrir la session administrative</span>
+            </button>
+        </div>
+
+        <!-- Formulaire d'Inscription -->
+        <div class="setup-form-container hidden" id="form-register-container">
+            <div class="form-group">
+                <label class="form-label" for="reg-username-input">Identifiant de connexion</label>
+                <input type="text" class="form-input" id="reg-username-input" placeholder="Ex: charlie, diana..." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-name-input">Nom complet / Titre</label>
+                <input type="text" class="form-input" id="reg-name-input" placeholder="Ex: Charlie (Secrétaire Général)..." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-password-input">Mot de passe</label>
+                <input type="password" class="form-input" id="reg-password-input" placeholder="Choisissez un mot de passe" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-role-input">Rôle administratif</label>
+                <select class="form-input" id="reg-role-input">
+                    <option value="directrice">Directrice de l'Université</option>
+                    <option value="comptable">Comptable du Campus</option>
+                    <option value="secretaire">Secrétaire Général</option>
+                    <option value="rh">Ressources Humaines</option>
+                    <option value="gestionnaire">Gestionnaire Informatique</option>
+                </select>
+            </div>
+            <button class="btn-primary btn-launch" id="btn-register-submit" style="width: 100%;">
+                <span>Créer le compte & Générer les clés</span>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- === DASHBOARD PRINCIPAL === -->
+<div class="dashboard hidden" id="dashboard">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <div class="logo-small">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="svg-accent"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                <span>CampusAdmin</span>
+            </div>
+            <div class="node-badge" id="node-badge">
+                <span class="status-dot online"></span>
+                <span class="mono" id="topbar-username">SESSION: ---</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="mode-indicator" id="mode-indicator">
+                <span class="mono" id="mode-label">LIAISON: DIRECT</span>
+            </div>
+            <button class="btn-logout" id="btn-reset" title="Déconnecter / Changer d'identité">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mise en page avec Sidebar à gauche -->
+    <div class="dashboard-main-container">
+        
+        <!-- SIDEBAR DE NAVIGATION -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-menu">
+                <button class="menu-tab-btn active" data-tab="view-transfer">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    <span>Nouveau Message</span>
+                </button>
+                <button class="menu-tab-btn" data-tab="view-inbox">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                    <span>Boîte de réception</span>
+                </button>
+                <button class="menu-tab-btn" data-tab="view-scolarite">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span>Messagerie Scolarité</span>
+                </button>
+                <button class="menu-tab-btn" data-tab="view-settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <span>Appareils & Conformité</span>
+                </button>
+            </div>
+
+            <!-- Identité locale affichée en bas de la sidebar -->
+            <div class="sidebar-footer">
+                <div class="identity-card-mini">
+                    <div class="identity-avatar-mini" id="identity-avatar">A</div>
+                    <div class="identity-info-mini">
+                        <div class="identity-name-mini" id="identity-name">---</div>
+                        <div class="mono text-muted small" id="identity-role">---</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ZONE DE CONTENU PRINCIPALE (Onglets) -->
+        <main class="admin-content-area">
+
+            <!-- CONTENU : REDIGER UN MESSAGE (STYLE GMAIL) -->
+            <div class="admin-view active" id="view-transfer">
+                <!-- Gmail Like Composer Card -->
+                <div class="gmail-composer">
+                    <div class="composer-header">
+                        <span>Nouveau Message de Service</span>
+                    </div>
+                    
+                    <div class="composer-row">
+                        <span class="composer-label">À :</span>
+                        <input type="text" class="composer-input mono" id="send-to" value="bob" placeholder="Destinataire (ex: bob)">
+                    </div>
+                    
+                    <div class="composer-row">
+                        <span class="composer-label">Objet :</span>
+                        <input type="text" class="composer-input" id="send-subject" placeholder="Objet de la transmission administrative (ex: Relevés budgétaires T2)">
+                    </div>
+
+                    <div class="composer-body-container">
+                        <textarea class="composer-textarea" id="send-message" placeholder="Saisissez le contenu confidentiel ou les pièces d'accompagnement..."></textarea>
+                    </div>
+
+                    <div class="composer-attachment-row">
+                        <div class="attachment-btn-wrapper">
+                            <input type="file" id="file-input" class="hidden">
+                            <button class="btn-secondary small" id="btn-trigger-file">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                <span>Joindre une pièce administrative</span>
+                            </button>
+                        </div>
+                        <div class="file-selected-info hidden" id="file-selected">
+                            <span class="mono small" id="file-name-display">---</span>
+                            <button class="btn-clear-file" id="btn-clear-file">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="composer-footer">
+                        <div class="composer-footer-left">
+                            <button class="btn-primary" id="btn-send">
+                                <span>Transmettre le document</span>
+                            </button>
+                            <button class="btn-demo" id="btn-alter" title="Simuler une corruption de fichier en transit pour tester l'intégrité">
+                                <span>Simuler erreur de transmission</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau de confirmation MITM -->
+                <div class="send-fp-warning hidden" id="send-fp-warning">
+                    <div class="warning-box">
+                        <div class="warning-header text-orange">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            <span>Validation de l'empreinte d'appareil du destinataire</span>
+                        </div>
+                        <p class="text-muted small">Veuillez confirmer que le numéro d'enregistrement de l'appareil distant correspond au vôtre :</p>
+                        <div class="mono warning-fingerprint" id="send-server-fp">---</div>
+                        <div class="warning-actions">
+                            <button class="btn-success" id="btn-confirm-send">L'empreinte correspond — Confirmer</button>
+                            <button class="btn-ghost" id="btn-cancel-send">Annuler l'envoi</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENU : BOITE DE RECEPTION -->
+            <div class="admin-view" id="view-inbox">
+                <div class="view-header">
+                    <h2>Boîte de Réception Administrative</h2>
+                    <p class="text-muted">Récupérez et décoderez automatiquement les documents validés localement.</p>
+                </div>
+
+                <div class="inbox-actions">
+                    <button class="btn-primary" id="btn-refresh-inbox">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        <span>Vérifier les nouveaux documents</span>
+                    </button>
+                </div>
+
+                <div class="inbox-list" id="inbox-list">
+                    <div class="inbox-empty mono text-muted">[ Aucun document en attente de synchronisation ]</div>
+                </div>
+            </div>
+
+            <!-- CONTENU : MESSAGERIE SCOLARITE -->
+            <div class="admin-view" id="view-scolarite">
+                <div class="view-header">
+                    <h2>Boîte de dialogue des scolaires (Étudiants / Enseignants)</h2>
+                    <p class="text-muted">Messages non chiffrés envoyés à l'administration via le portail scolaire.</p>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="minimal-table">
+                        <thead>
+                            <tr>
+                                <th>Émetteur</th>
+                                <th>Type</th>
+                                <th>Objet</th>
+                                <th>Message</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-scolarite-messages-tbody">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTENU : CONFIGURATION ET CONFORMITE -->
+            <div class="admin-view" id="view-settings">
+                <div class="view-header">
+                    <h2>Conformité des Postes de Travail</h2>
+                    <p class="text-muted">Suivi technique et vérification de la sécurité d'accès.</p>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Certificat d'appareil -->
+                    <div class="settings-card">
+                        <h3>Identifiant d'Intégrité de cet Appareil</h3>
+                        <div class="fingerprint-box">
+                            <span class="mono" id="local-fingerprint">----·----·----·----</span>
+                        </div>
+                        <p class="text-muted small mt-2">Ce numéro de registre unique prouve l'authenticité de votre poste de travail lors des échanges.</p>
+                    </div>
+
+                    <!-- Test MITM -->
+                    <div class="settings-card">
+                        <h3>Vérifier un poste distant</h3>
+                        <p class="text-muted small mb-3">Saisissez l'identifiant d'un collègue pour vérifier son numéro d'appareil enregistré.</p>
+                        <div class="mitm-check-form">
+                            <input type="text" class="form-input mono" id="mitm-user" placeholder="Ex: bob">
+                            <button class="btn-secondary" id="btn-check-fp">Vérifier</button>
+                        </div>
+                        <div class="mitm-result-box hidden" id="mitm-result">
+                            <div class="mono small" id="mitm-fp-display">---</div>
+                            <div class="mitm-status text-green" id="mitm-status"></div>
+                        </div>
+                    </div>
+
+                    <!-- Infos système -->
+                    <div class="settings-card">
+                        <h3>Configuration du Nœud</h3>
+                        <div class="system-info-list">
+                            <div class="info-row">
+                                <span class="text-muted">Serveur Central</span>
+                                <span class="mono" id="cfg-server-ip">127.0.0.1</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="text-muted">Type de Tunnel</span>
+                                <span class="mono" id="cfg-mode">DIRECT</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="text-muted">Format Protocole</span>
+                                <span class="mono">E2EE-AES-RSA</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- TIROIR TECHNIQUE DES LOGS (Diagnostic) -->
+    <footer class="admin-console-footer">
+        <details class="console-drawer">
+            <summary class="console-drawer-header">
+                <span>Journal de Synchronisation Réseau (Aide technique)</span>
+                <span class="console-drawer-arrow">▲</span>
+            </summary>
+            <div class="console-drawer-content">
+                <div class="console-body mono" id="console-body">
+                    <div class="console-line text-muted">[ Prêt pour diagnostic de protocole... ]</div>
+                </div>
+                <div class="console-drawer-controls">
+                    <button class="btn-ghost small" id="btn-clear-console">Effacer les logs</button>
+                </div>
+            </div>
+        </details>
+    </footer>
+
+</div>
+
+<!-- Template Carte Message -->
+<template id="tpl-message">
+    <div class="message-card">
+        <div class="message-header">
+            <div class="message-from mono"></div>
+            <div class="message-time mono text-muted"></div>
+        </div>
+        <div class="integrity-banner"></div>
+        <div class="message-body"></div>
+        <div class="message-logs-toggle mono small text-muted">Afficher les étapes de validation technique</div>
+        <div class="message-logs hidden"></div>
+    </div>
+</template>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
