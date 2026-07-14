@@ -202,19 +202,11 @@ def _load_public_key(username: str):
 def _get_server_url() -> str:
     """
     Construit l'URL du serveur cible.
-    Tente d'utiliser HTTPS (avec validation ignorée pour le développement),
-    et bascule en HTTP en cas d'erreur de protocole SSL ou de connexion.
+    Le serveur central fonctionnant uniquement en HTTPS (port 5000).
     """
     cfg = session.get('config', {})
     server_ip = cfg.get('server_ip', '127.0.0.1')
-    try:
-        # Essai rapide en HTTPS
-        url = f'https://{server_ip}:5000'
-        requests.get(url, timeout=0.5, verify=False)
-        return url
-    except Exception:
-        # Repli en HTTP
-        return f'http://{server_ip}:5000'
+    return f'https://{server_ip}:5000'
 
 
 # ---------------------------------------------------------------------------

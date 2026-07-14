@@ -37,6 +37,17 @@
                 <label class="form-label" for="password-input">Mot de passe</label>
                 <input type="password" class="form-input" id="password-input" placeholder="Saisissez votre mot de passe" required>
             </div>
+            <div class="form-group">
+                <label class="form-label" for="server-ip-input">Adresse IP du Serveur Central</label>
+                <input type="text" class="form-input mono" id="server-ip-input" placeholder="Ex: 192.168.1.100" value="192.168.168.23" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="connection-mode-input">Liaison Réseau</label>
+                <select class="form-input" id="connection-mode-input">
+                    <option value="direct" selected>Liaison Directe (Sans VPN)</option>
+                    <option value="vpn">Liaison VPN (Tunnel Chiffré)</option>
+                </select>
+            </div>
             <button class="btn-primary btn-launch" id="btn-launch" style="width: 100%;">
                 <span>Ouvrir la session administrative</span>
             </button>
@@ -64,6 +75,17 @@
                     <option value="secretaire">Secrétaire Général</option>
                     <option value="rh">Ressources Humaines</option>
                     <option value="gestionnaire">Gestionnaire Informatique</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-server-ip-input">Adresse IP du Serveur Central</label>
+                <input type="text" class="form-input mono" id="reg-server-ip-input" placeholder="Ex: 192.168.1.100" value="192.168.168.23" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="reg-connection-mode-input">Liaison Réseau</label>
+                <select class="form-input" id="reg-connection-mode-input">
+                    <option value="direct" selected>Liaison Directe (Sans VPN)</option>
+                    <option value="vpn">Liaison VPN (Tunnel Chiffré)</option>
                 </select>
             </div>
             <button class="btn-primary btn-launch" id="btn-register-submit" style="width: 100%;">

@@ -59,6 +59,43 @@ function consoleLogs(logsArray) {
 document.addEventListener('DOMContentLoaded', () => {
     setupSidebarTabs();
     setupAttachmentButton();
+
+    // Charger l'IP et le mode depuis localStorage s'ils existent
+    const storedIp = localStorage.getItem('secureshare_server_ip') || '192.168.168.23';
+    const storedMode = localStorage.getItem('secureshare_mode') || 'direct';
+
+    const loginIp = $('server-ip-input');
+    const loginMode = $('connection-mode-input');
+    const regIp = $('reg-server-ip-input');
+    const regMode = $('reg-connection-mode-input');
+
+    if (loginIp) loginIp.value = storedIp;
+    if (loginMode) loginMode.value = storedMode;
+    if (regIp) regIp.value = storedIp;
+    if (regMode) regMode.value = storedMode;
+
+    selectedMode = storedMode;
+
+    // Synchronisation des champs entre Connexion et Inscription
+    if (loginIp && regIp) {
+        loginIp.addEventListener('input', (e) => {
+            regIp.value = e.target.value;
+        });
+        regIp.addEventListener('input', (e) => {
+            loginIp.value = e.target.value;
+        });
+    }
+
+    if (loginMode && regMode) {
+        loginMode.addEventListener('change', (e) => {
+            regMode.value = e.target.value;
+            selectedMode = e.target.value;
+        });
+        regMode.addEventListener('change', (e) => {
+            loginMode.value = e.target.value;
+            selectedMode = e.target.value;
+        });
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -86,13 +123,20 @@ $('tab-register').addEventListener('click', () => {
 $('btn-launch').addEventListener('click', async () => {
     const username = $('username-input').value.trim().toLowerCase();
     const password = $('password-input').value.trim();
+    const serverIp = ($('server-ip-input').value.trim()) || '127.0.0.1';
+    const connectionMode = $('connection-mode-input').value;
 
     if (!username || !password) {
         alert('Veuillez entrer votre identifiant et votre mot de passe.');
         return;
     }
     selectedUser = username;
-    const serverIp = '127.0.0.1';
+    selectedMode = connectionMode;
+
+    // Sauvegarde pour le prochain chargement
+    localStorage.setItem('secureshare_server_ip', serverIp);
+    localStorage.setItem('secureshare_mode', connectionMode);
+
     const btn = $('btn-launch');
 
     btn.disabled = true;
@@ -114,7 +158,7 @@ $('btn-launch').addEventListener('click', async () => {
         await loadDashboard();
         $('setup-overlay').classList.add('hidden');
         $('dashboard').classList.remove('hidden');
-        consoleLog(`Session de travail '${selectedUser}' ouverte. Liaison réseau ${selectedMode.toUpperCase()} active.`, 'success');
+        consoleLog(`Session de travail '${selectedUser}' ouverte. Liaison réseau ${selectedMode.toUpperCase()} active (Serveur : ${serverIp}).`, 'success');
 
     } catch (e) {
         alert(`Erreur de liaison locale : ${e.message}`);
@@ -130,13 +174,20 @@ $('btn-register-submit').addEventListener('click', async () => {
     const name = $('reg-name-input').value.trim();
     const password = $('reg-password-input').value.trim();
     const role = $('reg-role-input').value;
+    const serverIp = ($('reg-server-ip-input').value.trim()) || '127.0.0.1';
+    const connectionMode = $('reg-connection-mode-input').value;
 
     if (!username || !name || !password || !role) {
         alert('Veuillez remplir tous les champs du formulaire.');
         return;
     }
     selectedUser = username;
-    const serverIp = '127.0.0.1';
+    selectedMode = connectionMode;
+
+    // Sauvegarde pour le prochain chargement
+    localStorage.setItem('secureshare_server_ip', serverIp);
+    localStorage.setItem('secureshare_mode', connectionMode);
+
     const btn = $('btn-register-submit');
 
     btn.disabled = true;
@@ -158,7 +209,7 @@ $('btn-register-submit').addEventListener('click', async () => {
         await loadDashboard();
         $('setup-overlay').classList.add('hidden');
         $('dashboard').classList.remove('hidden');
-        consoleLog(`Compte '${selectedUser}' créé. Session de travail ouverte. Liaison réseau ${selectedMode.toUpperCase()} active.`, 'success');
+        consoleLog(`Compte '${selectedUser}' créé. Session de travail ouverte. Liaison réseau ${selectedMode.toUpperCase()} active (Serveur : ${serverIp}).`, 'success');
 
     } catch (e) {
         alert(`Erreur d'inscription locale : ${e.message}`);
