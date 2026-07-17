@@ -1,6 +1,9 @@
 __pycache__/
 *.pyc
-shared/keys/charlie_private.pem
-shared/keys/charlie_public.pem
-shared/keys/charliecharlie_private.pem
-shared/keys/charliecharlie_public.pem
+venv/
+.env
+*.db
+*.log
+shared/keys/*.pem
+shared/server_info.json
+
