@@ -139,14 +139,23 @@ def _load_server_ip_from_file() -> str:
 def _get_server_url() -> str:
     """
     Construit l'URL du serveur cible de manière dynamique.
-    Lit d'abord l'adresse IP détectée automatiquement par le serveur dans shared/server_info.json.
+    Priorité :
+    1. Adresse IP spécifiée dans la session utilisateur (saisie dans le formulaire).
+    2. Fichier partagé ou détection automatique de secours si non configuré dans la session.
     """
-    server_ip = _load_server_ip_from_file()
+    # 1. On cherche d'abord dans la session utilisateur (IP saisie dans le formulaire)
+    cfg = session.get('config', {})
+    server_ip = cfg.get('server_ip')
     
-    # Si non trouvé, fallback vers la session
+    # 2. Si pas en session (ex: premier chargement avant connexion), on utilise la détection automatique
     if not server_ip:
-        cfg = session.get('config', {})
-        server_ip = cfg.get('server_ip', '127.0.0.1').strip()
+        server_ip = _load_server_ip_from_file()
+        
+    # Fallback ultime
+    if not server_ip:
+        server_ip = '127.0.0.1'
+        
+    server_ip = server_ip.strip()
     
     # Si c'est déjà une URL complète
     if server_ip.startswith('http://') or server_ip.startswith('https://'):
