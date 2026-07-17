@@ -96,6 +96,37 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedMode = e.target.value;
         });
     }
+
+    // Tenter de détecter le serveur automatiquement (IP locale ou ngrok)
+    fetch('/api/local-detect-server')
+        .then(res => res.json())
+        .then(data => {
+            if (data.server_ip) {
+                if (loginIp) loginIp.value = data.server_ip;
+                if (regIp) regIp.value = data.server_ip;
+                if (data.is_ngrok) {
+                    consoleLog(`Configuration serveur automatique (ngrok) : liaison DMZ active via ${data.server_ip}`, 'success');
+                } else {
+                    consoleLog(`Configuration serveur automatique (LAN) : liaison réseau active via ${data.server_ip}`, 'success');
+                }
+            }
+        })
+        .catch(err => console.error("Erreur de détection serveur:", err));
+
+    // Vérifier si une session est déjà active pour la restaurer automatiquement
+    fetch('/api/local-status')
+        .then(res => res.json())
+        .then(async data => {
+            if (data.configured) {
+                selectedUser = data.username;
+                selectedMode = data.mode;
+                await loadDashboard();
+                $('setup-overlay').classList.add('hidden');
+                $('dashboard').classList.remove('hidden');
+                consoleLog(`Session de travail '${selectedUser}' restaurée automatiquement. Liaison réseau ${selectedMode.toUpperCase()} active (Serveur : ${data.server_ip}).`, 'success');
+            }
+        })
+        .catch(err => console.error("Erreur de récupération de statut session:", err));
 });
 
 // ---------------------------------------------------------------------------
@@ -236,6 +267,10 @@ $('btn-reset').addEventListener('click', () => {
     $('tab-login').click();
 });
 
+$('btn-logout-admin').addEventListener('click', () => {
+    $('btn-reset').click();
+});
+
 // ---------------------------------------------------------------------------
 // Gestion de la Sidebar (Tabs Navigation)
 // ---------------------------------------------------------------------------
@@ -266,6 +301,9 @@ function setupSidebarTabs() {
                 // Actions spéciales au chargement de l'onglet
                 if (viewId === 'view-scolarite') {
                     loadAdminScolariteMessages();
+                } else if (viewId === 'view-inbox') {
+                    const btn = $('btn-refresh-inbox');
+                    if (btn) btn.click();
                 }
             }, 150);
         });
@@ -312,16 +350,56 @@ async function loadDashboard() {
     $('cfg-server-ip').textContent = data.server_ip;
     $('cfg-mode').textContent = data.mode.toUpperCase();
 
+    // Charger la liste des destinataires dynamiquement
+    await loadRecipientList(username);
+
     // Restreindre ou orienter par défaut les onglets selon l'utilisateur
     const composeTab = document.querySelector('.menu-tab-btn[data-tab="view-transfer"]');
     const inboxTab = document.querySelector('.menu-tab-btn[data-tab="view-inbox"]');
 
     if (role.toLowerCase() === 'directrice') {
         inboxTab.click();
-        $('send-to').value = 'alice'; // Par défaut vers Alice
     } else {
         composeTab.click();
-        $('send-to').value = 'bob'; // Par défaut vers la directrice
+    }
+}
+
+async function loadRecipientList(currentUser) {
+    try {
+        const resp = await fetch('/api/local-users');
+        const users = await resp.json();
+        
+        const select = $('send-to');
+        if (!select) return;
+        select.innerHTML = '';
+        
+        let hasRecipient = false;
+        users.forEach(u => {
+            if (u.username !== currentUser) {
+                const opt = document.createElement('option');
+                opt.value = u.username;
+                const roleLabels = { 
+                    directrice: "Directrice", 
+                    comptable: "Comptable",
+                    secretaire: "Secrétaire Général",
+                    rh: "Ressources Humaines",
+                    gestionnaire: "Gestionnaire Informatique"
+                };
+                const displayRole = roleLabels[u.role.toLowerCase()] || (u.role.charAt(0).toUpperCase() + u.role.slice(1));
+                opt.textContent = `${u.name} (${displayRole})`;
+                select.appendChild(opt);
+                hasRecipient = true;
+            }
+        });
+        
+        if (!hasRecipient) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Aucun autre membre disponible';
+            select.appendChild(opt);
+        }
+    } catch (e) {
+        console.error("Erreur de chargement des destinataires:", e);
     }
 }
 
@@ -609,6 +687,23 @@ async function loadAdminScolariteMessages() {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center text-red">Erreur réseau : ${e.message}</td></tr>`;
     }
 }
+
+$('btn-refresh-scolarite').addEventListener('click', async () => {
+    const btn = $('btn-refresh-scolarite');
+    btn.disabled = true;
+    btn.textContent = 'Actualisation...';
+    consoleLog('Synchronisation des messages de la scolarité depuis la DMZ...', 'info');
+
+    try {
+        await loadAdminScolariteMessages();
+        consoleLog('Messages de la scolarité actualisés avec succès.', 'success');
+    } catch (e) {
+        consoleLog(`Erreur lors de l'actualisation : ${e.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Actualiser les messages</span>';
+    }
+});
 
 // ---------------------------------------------------------------------------
 // Vérification de Clé / Empreinte d'appareil à la demande

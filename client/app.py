@@ -42,7 +42,7 @@ app.secret_key = "secureshare_local_client_secret_2024"
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data.db')
 
 def init_db():
-    """Initialise la base de données SQLite avec des données factices si elle n'existe pas."""
+    """Initialise la base de données SQLite locale avec les utilisateurs administratifs."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -54,109 +54,7 @@ def init_db():
         role TEXT NOT NULL
     )
     ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS grades (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_username TEXT NOT NULL,
-        subject TEXT NOT NULL,
-        grade REAL NOT NULL,
-        coefficient INTEGER NOT NULL,
-        date TEXT NOT NULL
-    )
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS schedules (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL,
-        day TEXT NOT NULL,
-        slot1 TEXT,
-        slot2 TEXT,
-        slot3 TEXT
-    )
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS payslips (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        teacher_username TEXT NOT NULL,
-        month TEXT NOT NULL,
-        amount REAL NOT NULL,
-        file_name TEXT NOT NULL
-    )
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS bulletins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_username TEXT NOT NULL,
-        period TEXT NOT NULL,
-        gpa REAL NOT NULL,
-        file_name TEXT NOT NULL
-    )
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS admin_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        from_username TEXT NOT NULL,
-        role TEXT NOT NULL,
-        subject TEXT NOT NULL,
-        message TEXT NOT NULL,
-        date TEXT NOT NULL
-    )
-    ''')
     
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        # Données de test pour Scolarité / Pronote
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('dupont', 'Jean Dupont', 'dupont123', 'student'))
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('martin', 'Claire Martin', 'martin123', 'student'))
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('prof_lefevre', 'Dr. Pierre Lefevre', 'lefevre123', 'teacher'))
-        
-        # Données de test administratives
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('alice', 'Alice (Comptable du Campus)', 'alice123', 'comptable'))
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('bob', 'Bob (Directrice de l\'Université)', 'bob123', 'directrice'))
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('charlie', 'Charlie (Secrétaire Général)', 'charlie123', 'secretaire'))
-        cursor.execute("INSERT INTO users VALUES (?, ?, ?, ?)", ('diana', 'Diana (Responsable RH)', 'diana123', 'rh'))
-        
-        # Notes
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('dupont', 'Mathématiques', 14.5, 3, '2026-06-15'))
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('dupont', 'Physique', 12.0, 3, '2026-06-18'))
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('dupont', 'Informatique', 16.5, 4, '2026-07-02'))
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('martin', 'Mathématiques', 11.0, 3, '2026-06-15'))
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('martin', 'Physique', 15.5, 3, '2026-06-18'))
-        cursor.execute("INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-                       ('martin', 'Informatique', 18.0, 4, '2026-07-02'))
-        
-        # Emplois du temps
-        days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
-        for day in days:
-            cursor.execute("INSERT INTO schedules (username, day, slot1, slot2, slot3) VALUES (?, ?, ?, ?, ?)",
-                           ('dupont', day, 'Mathématiques (08h00 - 11h00)', 'Physique (11h00 - 13h00)', 'Informatique (14h00 - 17h00)'))
-            cursor.execute("INSERT INTO schedules (username, day, slot1, slot2, slot3) VALUES (?, ?, ?, ?, ?)",
-                           ('martin', day, 'Physique (08h00 - 11h00)', 'Informatique (11h00 - 13h00)', 'Mathématiques (14h00 - 17h00)'))
-            cursor.execute("INSERT INTO schedules (username, day, slot1, slot2, slot3) VALUES (?, ?, ?, ?, ?)",
-                           ('prof_lefevre', day, 'Cours Math - Dupont/Martin (08h00 - 11h00)', 'Recherche Lab (11h00 - 13h00)', 'Encadrement Projet (14h00 - 17h00)'))
-
-        # Bulletins de salaire (profs)
-        cursor.execute("INSERT INTO payslips (teacher_username, month, amount, file_name) VALUES (?, ?, ?, ?)",
-                       ('prof_lefevre', 'Mai 2026', 3240.50, 'bulletin_salaire_mai_2026.pdf'))
-        cursor.execute("INSERT INTO payslips (teacher_username, month, amount, file_name) VALUES (?, ?, ?, ?)",
-                       ('prof_lefevre', 'Juin 2026', 3240.50, 'bulletin_salaire_juin_2026.pdf'))
-        
-        # Bulletins trimestriels (étudiants)
-        cursor.execute("INSERT INTO bulletins (student_username, period, gpa, file_name) VALUES (?, ?, ?, ?)",
-                       ('dupont', '1er Semestre 2026', 14.33, 'bulletin_semestre_1_dupont.pdf'))
-        cursor.execute("INSERT INTO bulletins (student_username, period, gpa, file_name) VALUES (?, ?, ?, ?)",
-                       ('martin', '1er Semestre 2026', 14.83, 'bulletin_semestre_1_martin.pdf'))
-
-        # Messages scolarité
-        cursor.execute("INSERT INTO admin_messages (from_username, role, subject, message, date) VALUES (?, ?, ?, ?, ?)",
-                       ('dupont', 'student', 'Demande de relevé officiel', 'Bonjour, je souhaiterais obtenir un relevé de notes officiel signé pour mon dossier de master. Merci.', '2026-07-10'))
-        cursor.execute("INSERT INTO admin_messages (from_username, role, subject, message, date) VALUES (?, ?, ?, ?, ?)",
-                       ('prof_lefevre', 'teacher', 'Absence exceptionnelle', 'Chers collègues, je serai absent le mardi 21 juillet pour assister à un séminaire externe. Mes cours seront reportés.', '2026-07-12'))
     # S'assurer que les utilisateurs administratifs de test existent
     cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'alice'")
     if cursor.fetchone()[0] == 0:
@@ -199,13 +97,70 @@ def _load_public_key(username: str):
     return serialization.load_pem_public_key(pub_pem)
 
 
+def _load_server_ip_from_file() -> str:
+    """Charge l'adresse IP du serveur à partir de shared/server_info.json s'il existe, sinon fallback."""
+    shared_dir = os.path.join(BASE_DIR, 'shared')
+    info_path = os.path.join(shared_dir, 'server_info.json')
+    if os.path.exists(info_path):
+        try:
+            with open(info_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('server_ip', '127.0.0.1')
+        except Exception:
+            pass
+            
+    # Détection automatique de secours
+    # Ngrok local
+    try:
+        resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=0.5)
+        if resp.status_code == 200:
+            tunnels = resp.json().get('tunnels', [])
+            for t in tunnels:
+                public_url = t.get('public_url', '')
+                if public_url:
+                    return public_url.replace("https://", "").replace("http://", "")
+    except Exception:
+        pass
+
+    # IP WiFi / Locale de secours
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        pass
+        
+    return '127.0.0.1'
+
+
 def _get_server_url() -> str:
     """
-    Construit l'URL du serveur cible.
-    Le serveur central fonctionnant uniquement en HTTPS (port 5000).
+    Construit l'URL du serveur cible de manière dynamique.
+    Lit d'abord l'adresse IP détectée automatiquement par le serveur dans shared/server_info.json.
     """
-    cfg = session.get('config', {})
-    server_ip = cfg.get('server_ip', '127.0.0.1')
+    server_ip = _load_server_ip_from_file()
+    
+    # Si non trouvé, fallback vers la session
+    if not server_ip:
+        cfg = session.get('config', {})
+        server_ip = cfg.get('server_ip', '127.0.0.1').strip()
+    
+    # Si c'est déjà une URL complète
+    if server_ip.startswith('http://') or server_ip.startswith('https://'):
+        return server_ip
+        
+    # Si c'est une adresse ngrok
+    if 'ngrok' in server_ip:
+        return f'https://{server_ip}'
+        
+    # Si un port est déjà spécifié (ex: 127.0.0.1:5000)
+    if ':' in server_ip:
+        return f'https://{server_ip}'
+        
+    # Comportement par défaut pour IP ou nom d'hôte sans port
     return f'https://{server_ip}:5000'
 
 
@@ -267,8 +222,8 @@ def local_login():
 
     session['config'] = {
         'username': username,
-        'server_ip': data.get('server_ip', '127.0.0.1'),
-        'mode': data.get('mode', 'direct'),
+        'server_ip': data.get('server_ip') or _load_server_ip_from_file(),
+        'mode': data.get('mode') or 'direct',
     }
     return jsonify({"status": "ok", "config": session['config']}), 200
 
@@ -317,8 +272,8 @@ def local_register():
 
     session['config'] = {
         'username': username,
-        'server_ip': data.get('server_ip', '127.0.0.1'),
-        'mode': data.get('mode', 'direct'),
+        'server_ip': data.get('server_ip') or _load_server_ip_from_file(),
+        'mode': data.get('mode') or 'direct',
     }
     return jsonify({"status": "ok", "config": session['config']}), 200
 
@@ -350,6 +305,20 @@ def local_status():
         "mode": cfg.get('mode', 'direct'),
         "server_ip": cfg.get('server_ip', '127.0.0.1'),
     }), 200
+
+
+@app.route('/api/local-users', methods=['GET'])
+def local_users():
+    """Retourne la liste de tous les utilisateurs administratifs enregistrés localement."""
+    cfg = session.get('config')
+    if not cfg:
+        return jsonify({"error": "Session non configurée."}), 403
+
+    try:
+        users = _query_db("SELECT username, name, role FROM users ORDER BY name ASC")
+        return jsonify([dict(u) for u in users]), 200
+    except Exception as e:
+        return jsonify({"error": f"Erreur de récupération des utilisateurs : {str(e)}"}), 500
 
 
 @app.route('/api/local-send', methods=['POST'])
@@ -388,7 +357,12 @@ def local_send():
         logs.append(f"Requête HTTPS vers l'annuaire central : {server_url}/publickey/{recipient}...")
         
         # verify=False permet de se connecter en HTTPS malgré le certificat de développement auto-signé
-        resp = requests.get(f"{server_url}/publickey/{recipient}", timeout=5, verify=False)
+        resp = requests.get(
+            f"{server_url}/publickey/{recipient}", 
+            timeout=5, 
+            verify=False, 
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
 
         if resp.status_code != 200:
             return jsonify({"error": f"Impossible de récupérer la clé de '{recipient}'. Serveur HS ?"}), 502
@@ -457,7 +431,8 @@ def local_send():
             f"{server_url}/send",
             json=envelope,
             timeout=5,
-            verify=False
+            verify=False,
+            headers={"ngrok-skip-browser-warning": "any"}
         )
 
         if send_resp.status_code != 200:
@@ -503,7 +478,12 @@ def local_inbox():
         server_url = _get_server_url()
         logs.append(f"Récupération des enveloppes chiffrées via HTTPS depuis le serveur pour '{username}'...")
 
-        resp = requests.get(f"{server_url}/receive/{username}", timeout=5, verify=False)
+        resp = requests.get(
+            f"{server_url}/receive/{username}", 
+            timeout=5, 
+            verify=False, 
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
         envelopes = resp.json()
 
         if not envelopes:
@@ -623,7 +603,13 @@ def local_alter():
         server_url = _get_server_url()
         envelope['to'] = recipient
 
-        requests.post(f"{server_url}/send", json=envelope, timeout=5, verify=False)
+        requests.post(
+            f"{server_url}/send", 
+            json=envelope, 
+            timeout=5, 
+            verify=False, 
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
 
         return jsonify({
             "status": "altered",
@@ -650,7 +636,12 @@ def remote_fingerprint():
 
     try:
         server_url = _get_server_url()
-        resp = requests.get(f"{server_url}/publickey/{username}", timeout=5, verify=False)
+        resp = requests.get(
+            f"{server_url}/publickey/{username}", 
+            timeout=5, 
+            verify=False, 
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
         data = resp.json()
         return jsonify(data), resp.status_code
     except requests.exceptions.ConnectionError:
@@ -676,176 +667,64 @@ def _execute_db(query, args=()):
     conn.close()
 
 
-@app.route('/scolarite')
-def scolarite_index():
-    return render_template('scolarite.html')
-
-
-@app.route('/api/scolarite/login', methods=['POST'])
-def scolarite_login():
-    data = request.get_json(silent=True) or {}
-    username = data.get('username', '').strip().lower()
-    password = data.get('password', '').strip()
-    
-    user = _query_db("SELECT * FROM users WHERE username = ? AND password = ?", (username, password), one=True)
-    if not user:
-        return jsonify({"error": "Identifiant ou mot de passe incorrect."}), 401
-    
-    session['scolarite_user'] = user['username']
-    session['scolarite_name'] = user['name']
-    session['scolarite_role'] = user['role']
-    
-    return jsonify({
-        "status": "ok",
-        "user": {
-            "username": user['username'],
-            "name": user['name'],
-            "role": user['role']
-        }
-    }), 200
-
-
-@app.route('/api/scolarite/status', methods=['GET'])
-def scolarite_status():
-    if 'scolarite_user' not in session:
-        return jsonify({"authenticated": False}), 200
-    
-    return jsonify({
-        "authenticated": True,
-        "username": session['scolarite_user'],
-        "name": session['scolarite_name'],
-        "role": session['scolarite_role']
-    }), 200
-
-
-@app.route('/api/scolarite/logout', methods=['POST'])
-def scolarite_logout():
-    session.pop('scolarite_user', None)
-    session.pop('scolarite_name', None)
-    session.pop('scolarite_role', None)
-    return jsonify({"status": "ok"}), 200
-
-
-@app.route('/api/scolarite/dashboard', methods=['GET'])
-def scolarite_dashboard():
-    if 'scolarite_user' not in session:
-        return jsonify({"error": "Non authentifié"}), 401
-    
-    username = session['scolarite_user']
-    role = session['scolarite_role']
-    
-    data = {}
-    
-    if role == 'student':
-        # Grades
-        grades_rows = _query_db("SELECT * FROM grades WHERE student_username = ? ORDER BY date DESC", (username,))
-        data['grades'] = [dict(row) for row in grades_rows]
-        
-        # Bulletins
-        bulletins_rows = _query_db("SELECT * FROM bulletins WHERE student_username = ?", (username,))
-        data['bulletins'] = [dict(row) for row in bulletins_rows]
-        
-        # Schedule
-        schedule_rows = _query_db("SELECT * FROM schedules WHERE username = ?", (username,))
-        data['schedules'] = [dict(row) for row in schedule_rows]
-        
-        # Messages sent
-        msg_rows = _query_db("SELECT * FROM admin_messages WHERE from_username = ? ORDER BY date DESC", (username,))
-        data['messages'] = [dict(row) for row in msg_rows]
-        
-    elif role == 'teacher':
-        # Payslips
-        payslips_rows = _query_db("SELECT * FROM payslips WHERE teacher_username = ?", (username,))
-        data['payslips'] = [dict(row) for row in payslips_rows]
-        
-        # Schedule
-        schedule_rows = _query_db("SELECT * FROM schedules WHERE username = ?", (username,))
-        data['schedules'] = [dict(row) for row in schedule_rows]
-        
-        # Messages sent
-        msg_rows = _query_db("SELECT * FROM admin_messages WHERE from_username = ? ORDER BY date DESC", (username,))
-        data['messages'] = [dict(row) for row in msg_rows]
-        
-        # Students lists with grades to edit
-        student_grades = _query_db(
-            "SELECT g.id, g.student_username, u.name as student_name, g.subject, g.grade, g.coefficient, g.date "
-            "FROM grades g JOIN users u ON g.student_username = u.username ORDER BY u.name ASC"
-        )
-        data['class_grades'] = [dict(row) for row in student_grades]
-        
-        # List of students to add new grades
-        students = _query_db("SELECT username, name FROM users WHERE role = 'student'")
-        data['students_list'] = [dict(row) for row in students]
-        
-    return jsonify(data), 200
-
-
-@app.route('/api/scolarite/add-grade', methods=['POST'])
-def scolarite_add_grade():
-    if 'scolarite_user' not in session or session['scolarite_role'] != 'teacher':
-        return jsonify({"error": "Action réservée aux enseignants."}), 403
-    
-    data = request.get_json(silent=True) or {}
-    student = data.get('student_username')
-    subject = data.get('subject')
-    grade_val = data.get('grade')
-    coeff = data.get('coefficient', 1)
-    
-    if not student or not subject or grade_val is None:
-        return jsonify({"error": "Champs obligatoires manquants."}), 400
-    
-    try:
-        grade_float = float(grade_val)
-    except ValueError:
-        return jsonify({"error": "Note invalide."}), 400
-        
-    date_str = datetime.date.today().isoformat()
-    
-    _execute_db(
-        "INSERT INTO grades (student_username, subject, grade, coefficient, date) VALUES (?, ?, ?, ?, ?)",
-        (student, subject, grade_float, int(coeff), date_str)
-    )
-    return jsonify({"status": "ok", "message": "Note ajoutée."}), 200
-
-
-@app.route('/api/scolarite/send-message', methods=['POST'])
-def scolarite_send_message():
-    if 'scolarite_user' not in session:
-        return jsonify({"error": "Non authentifié."}), 401
-    
-    data = request.get_json(silent=True) or {}
-    subject = data.get('subject', '').strip()
-    message = data.get('message', '').strip()
-    
-    if not subject or not message:
-        return jsonify({"error": "L'objet et le message sont requis."}), 400
-        
-    username = session['scolarite_user']
-    role = session['scolarite_role']
-    date_str = datetime.date.today().isoformat()
-    
-    _execute_db(
-        "INSERT INTO admin_messages (from_username, role, subject, message, date) VALUES (?, ?, ?, ?, ?)",
-        (username, role, subject, message, date_str)
-    )
-    return jsonify({"status": "ok", "message": "Message envoyé à l'administration."}), 200
-
-
 @app.route('/api/admin/messages', methods=['GET'])
 def admin_messages():
     """
     [ADMIN] Récupère tous les messages envoyés par les étudiants et les enseignants.
-    Utile pour l'onglet 'Scolarité' de l'interface d'administration.
+    Les messages sont récupérés via HTTPS depuis le serveur central en DMZ.
     """
     cfg = session.get('config')
     if not cfg:
         return jsonify({"error": "Session admin non configurée."}), 403
         
-    rows = _query_db(
-        "SELECT m.*, u.name as sender_name FROM admin_messages m "
-        "JOIN users u ON m.from_username = u.username ORDER BY m.date DESC"
-    )
-    return jsonify([dict(row) for row in rows]), 200
+    try:
+        server_url = _get_server_url()
+        # verify=False permet de bypasser l'erreur de certificat auto-signé adhoc
+        resp = requests.get(
+            f"{server_url}/api/admin/messages", 
+            timeout=5, 
+            verify=False, 
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
+        if resp.status_code != 200:
+            return jsonify({"error": "Impossible de récupérer les messages de la scolarité depuis la DMZ."}), 502
+        return jsonify(resp.json()), 200
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Connexion impossible au serveur central en DMZ pour récupérer les messages."}), 503
+    except Exception as e:
+        return jsonify({"error": f"Erreur de récupération : {str(e)}"}), 500
+
+
+@app.route('/api/local-detect-ngrok', methods=['GET'])
+def local_detect_ngrok():
+    """Tente de détecter automatiquement une URL ngrok active via son API locale."""
+    try:
+        # ngrok expose son API locale sur le port 4040
+        resp = requests.get("http://127.0.0.1:4040/api/tunnels", timeout=1)
+        if resp.status_code == 200:
+            data = resp.json()
+            tunnels = data.get('tunnels', [])
+            for t in tunnels:
+                public_url = t.get('public_url', '')
+                if public_url:
+                    # Nettoyer l'adresse (enlever le protocole)
+                    clean_url = public_url.replace("https://", "").replace("http://", "")
+                    return jsonify({"active": True, "server_ip": clean_url}), 200
+    except Exception:
+        pass
+    return jsonify({"active": False}), 200
+
+
+@app.route('/api/local-detect-server', methods=['GET'])
+def local_detect_server():
+    """Détecte l'adresse du serveur (ngrok ou IP locale) depuis le fichier partagé ou fallback."""
+    server_ip = _load_server_ip_from_file()
+    is_ngrok = 'ngrok' in server_ip
+    return jsonify({
+        "active": True,
+        "server_ip": server_ip,
+        "is_ngrok": is_ngrok
+    }), 200
 
 
 # ---------------------------------------------------------------------------

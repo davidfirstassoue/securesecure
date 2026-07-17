@@ -1268,6 +1268,22 @@ body {
     background: transparent;
 }
 
+.composer-select {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.composer-select option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
 .composer-body-container {
     flex: 1;
     padding: 18px;
