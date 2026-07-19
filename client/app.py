@@ -429,7 +429,7 @@ def local_send():
             "signature": base64.b64encode(signature).decode('utf-8'),
             "sender_fingerprint": sender_fingerprint,
             "server_fingerprint_used": server_fingerprint,
-            "timestamp": datetime.datetime.now().isoformat(),
+            "timestamp": datetime.datetime.now().isoformat(),     
         }
 
         # --- Étape 8 : Envoi au serveur central ---
