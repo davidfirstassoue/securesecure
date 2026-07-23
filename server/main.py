@@ -45,9 +45,10 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 logger.propagate = False
 
-# Intégrer également les logs HTTP de Flask/Werkzeug dans le fichier server.log
+# Intégrer également les logs HTTP de Flask/Werkzeug dans le fichier server.log ET la console terminal
 werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.addHandler(file_handler)
+werkzeug_logger.addHandler(console_handler)
 
 app = Flask(__name__, template_folder='../client/templates', static_folder='../client/static')
 app.secret_key = "secureshare_central_server_secret_2026"
@@ -205,6 +206,7 @@ def index():
         "version": "1.0",
         "endpoints": [
             "GET  /publickey/<user>",
+            "POST /publickey",
             "POST /send",
             "GET  /receive/<user>"
         ]
@@ -233,6 +235,39 @@ def get_publickey(user: str):
         "public_key_pem": pub_pem.decode('utf-8'),
         "fingerprint": fingerprint
     }), 200
+
+
+@app.route('/publickey', methods=['POST'])
+def register_publickey():
+    """
+    Enregistre ou met à jour la clé publique d'un utilisateur dans l'annuaire central.
+    Format attendu : { "username": "bongo", "public_key_pem": "-----BEGIN PUBLIC KEY..." }
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Corps JSON invalide ou manquant."}), 400
+
+    user = data.get("username", "").strip().lower()
+    pub_pem_str = data.get("public_key_pem", "")
+
+    if not user or not pub_pem_str:
+        return jsonify({"error": "Champs 'username' et 'public_key_pem' requis."}), 400
+
+    keys_dir = os.path.join(BASE_DIR, 'shared', 'keys')
+    os.makedirs(keys_dir, exist_ok=True)
+    pub_key_path = os.path.join(keys_dir, f'{user}_public.pem')
+
+    try:
+        with open(pub_key_path, 'w', encoding='utf-8') as f:
+            f.write(pub_pem_str)
+        
+        fingerprint = compute_fingerprint(pub_pem_str.encode('utf-8'))
+        logger.info(f"Clé publique de '{user}' enregistrée dans l'annuaire central. Empreinte: {fingerprint}")
+        return jsonify({"status": "ok", "username": user, "fingerprint": fingerprint}), 200
+    except Exception as e:
+        logger.error(f"Erreur d'enregistrement de la clé publique de '{user}' : {str(e)}")
+        return jsonify({"error": "Impossible d'enregistrer la clé publique sur le serveur."}), 500
+
 
 
 @app.route('/send', methods=['POST'])

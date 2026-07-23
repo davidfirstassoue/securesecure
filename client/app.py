@@ -97,6 +97,65 @@ def _load_public_key(username: str):
     return serialization.load_pem_public_key(pub_pem)
 
 
+def _publish_public_key_to_server(username: str) -> bool:
+    """Envoie la clé publique de l'utilisateur au serveur central pour l'annuaire."""
+    try:
+        pub_pem = _load_public_key_pem(username)
+        server_url = _get_server_url()
+        resp = requests.post(
+            f"{server_url}/publickey",
+            json={
+                "username": username,
+                "public_key_pem": pub_pem.decode('utf-8')
+            },
+            timeout=5,
+            verify=False,
+            headers={"ngrok-skip-browser-warning": "any"}
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+def _get_or_fetch_public_key(username: str):
+    """
+    Charge la clé publique d'un utilisateur.
+    1. Essaie le disque local (shared/keys/<user>_public.pem).
+    2. Si introuvable, interroge l'annuaire central (GET /publickey/<user>).
+    3. Met en cache localement le fichier PEM récupéré.
+    """
+    pub_key_path = os.path.join(KEYS_DIR, f'{username}_public.pem')
+    if os.path.exists(pub_key_path):
+        try:
+            with open(pub_key_path, 'rb') as f:
+                return serialization.load_pem_public_key(f.read())
+        except Exception:
+            pass
+
+    # Récupération depuis le serveur central
+    server_url = _get_server_url()
+    resp = requests.get(
+        f"{server_url}/publickey/{username}",
+        timeout=5,
+        verify=False,
+        headers={"ngrok-skip-browser-warning": "any"}
+    )
+    if resp.status_code == 200:
+        pub_pem_str = resp.json().get('public_key_pem', '')
+        if pub_pem_str:
+            pub_pem_bytes = pub_pem_str.encode('utf-8')
+            try:
+                os.makedirs(KEYS_DIR, exist_ok=True)
+                with open(pub_key_path, 'wb') as f:
+                    f.write(pub_pem_bytes)
+            except Exception:
+                pass
+            return serialization.load_pem_public_key(pub_pem_bytes)
+
+    raise FileNotFoundError(f"Clé publique introuvable pour '{username}'")
+
+
+
 def _load_server_ip_from_file() -> str:
     """Charge l'adresse IP du serveur à partir de shared/server_info.json s'il existe, sinon fallback."""
     shared_dir = os.path.join(BASE_DIR, 'shared')
@@ -234,6 +293,9 @@ def local_login():
         'server_ip': data.get('server_ip') or _load_server_ip_from_file(),
         'mode': data.get('mode') or 'direct',
     }
+    # Enregistrer la clé publique auprès de l'annuaire central
+    _publish_public_key_to_server(username)
+
     return jsonify({"status": "ok", "config": session['config']}), 200
 
 
@@ -284,6 +346,9 @@ def local_register():
         'server_ip': data.get('server_ip') or _load_server_ip_from_file(),
         'mode': data.get('mode') or 'direct',
     }
+    # Enregistrer la clé publique créée auprès du serveur central
+    _publish_public_key_to_server(username)
+
     return jsonify({"status": "ok", "config": session['config']}), 200
 
 
@@ -537,11 +602,11 @@ def local_inbox():
                 # --- Vérification de la signature RSA-PSS ---
                 msg_logs.append(f"Vérification de la signature RSA-PSS de '{sender}'...")
                 try:
-                    sender_public_key = _load_public_key(sender)
+                    sender_public_key = _get_or_fetch_public_key(sender)
                     sig_ok = verify_signature(sha256_hex_received, signature, sender_public_key)
-                except FileNotFoundError:
+                except Exception as e:
                     sig_ok = False
-                    msg_logs.append(f"ALERTE : Clé publique de '{sender}' introuvable !")
+                    msg_logs.append(f"ALERTE : Impossible d'obtenir la clé publique de '{sender}' ({str(e)}) !")
 
                 integrity_ok = hash_ok and sig_ok
                 status = "valid" if integrity_ok else "tampered"
